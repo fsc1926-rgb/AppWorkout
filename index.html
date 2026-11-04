@@ -2,19 +2,14 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <!-- Regola fondamentale per il mobile: impedisce lo zoom accidentale -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Workout Tracker</title>
   
-  <!-- Collegamento al Manifest -->
   <link rel="manifest" href="manifest.json">
-  
-  <!-- Supporto specifico per iOS (iPhone/iPad) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Workout">
   <link rel="apple-touch-icon" href="icon-192.png">
-  
   <meta name="theme-color" content="#18181b">
   
   <style>
@@ -41,6 +36,26 @@
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     }
     
+    /* Stili per form e input */
+    label { font-size: 14px; color: #a1a1aa; font-weight: 500; }
+    select, input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      border: 1px solid #3f3f46;
+      background: #18181b;
+      color: white;
+      font-size: 16px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    select:focus, input:focus { border-color: #3b82f6; }
+    
+    .flex-row { display: flex; gap: 12px; }
+    .flex-col { flex: 1; }
+    
     .btn {
       background: #3b82f6;
       color: white;
@@ -51,18 +66,25 @@
       font-weight: 600;
       width: 100%;
       cursor: pointer;
-      margin-top: 16px;
       transition: background 0.2s;
     }
     .btn:active { background: #2563eb; }
     
-    /* Il tasto di installazione è nascosto finché la PWA non è validata dal browser */
-    #installCard {
-      background: #064e3b;
-      border: 1px solid #10b981;
-      display: none; 
-      margin-bottom: 20px;
+    /* Lista Storico */
+    .history { margin-top: 24px; border-top: 1px solid #3f3f46; padding-top: 16px; }
+    .history h4 { margin: 0 0 12px 0; font-size: 16px; }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #3f3f46;
+      font-size: 14px;
     }
+    .history-item:last-child { border-bottom: none; }
+    .date { color: #a1a1aa; }
+    .stats { font-weight: bold; color: #34d399; }
+    
+    #installCard { background: #064e3b; border: 1px solid #10b981; display: none; margin-bottom: 20px; }
     #installBtn { background: #10b981; margin-top: 10px; }
   </style>
 </head>
@@ -72,59 +94,155 @@
     <h1>Workout Pro</h1>
   </header>
 
-  <!-- Banner di installazione -->
+  <!-- Banner di installazione PWA -->
   <div class="card" id="installCard">
     <h3 style="margin-top:0; color: #34d399;">App Pronta!</h3>
-    <p style="margin:0; font-size: 14px; color: #d1fae5;">Installa questa app per usarla offline in palestra.</p>
+    <p style="margin:0; font-size: 14px; color: #d1fae5;">Installa l'app per salvare i dati sul telefono.</p>
     <button class="btn" id="installBtn">Installa App</button>
   </div>
 
-  <!-- Contenuto dell'App -->
+  <!-- Interfaccia Registrazione -->
   <div class="card">
-    <h3 style="margin-top: 0;">Panca Piana</h3>
-    <p style="color: #a1a1aa;">Ultima serie: 80kg x 8</p>
-    <button class="btn" onclick="alert('Salvato in IndexedDB (Simulato)')">Log: 82.5kg x 8</button>
+    <label for="exerciseSelect">Seleziona Esercizio</label>
+    <select id="exerciseSelect"></select>
+
+    <div class="flex-row">
+      <div class="flex-col">
+        <label for="weight">Peso (kg)</label>
+        <input type="number" id="weight" step="0.5" placeholder="es. 80">
+      </div>
+      <div class="flex-col">
+        <label for="reps">Ripetizioni</label>
+        <input type="number" id="reps" placeholder="es. 8">
+      </div>
+    </div>
+
+    <button class="btn" id="saveBtn">Salva Serie</button>
+
+    <div class="history">
+      <h4>Ultime Serie</h4>
+      <div id="historyList"></div>
+    </div>
   </div>
 
   <script>
-    // 1. REGISTRAZIONE SERVICE WORKER
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try {
-          const reg = await navigator.serviceWorker.register('./sw.js');
-          console.log('SW Registrato con successo!', reg.scope);
-        } catch (err) {
-          console.error('Errore registrazione SW:', err);
-        }
+    // --- 1. LIBRERIA ESERCIZI ---
+    // Puoi aggiungere, rimuovere o modificare questa lista in qualsiasi momento
+    const libreriaEsercizi = [
+      "Panca Piana",
+      "Panca Inclinata Manubri",
+      "Squat Bilanciere",
+      "Stacco da Terra",
+      "Trazioni alla Sbarra",
+      "Rematore Bilanciere",
+      "Lento Avanti",
+      "Leg Press",
+      "Curl Bicipiti"
+    ];
+
+    // --- 2. INIZIALIZZAZIONE UI ---
+    const selectEl = document.getElementById('exerciseSelect');
+    const weightEl = document.getElementById('weight');
+    const repsEl = document.getElementById('reps');
+    const historyListEl = document.getElementById('historyList');
+
+    // Popola il menu a tendina
+    libreriaEsercizi.forEach(esercizio => {
+      const option = document.createElement('option');
+      option.value = esercizio;
+      option.textContent = esercizio;
+      selectEl.appendChild(option);
+    });
+
+    // --- 3. DATABASE LOCALE (localStorage) ---
+    // Recupera i dati salvati o crea un array vuoto
+    let logAllenamenti = JSON.parse(localStorage.getItem('workout_db')) || [];
+
+    function aggiornaStorico() {
+      const esercizioAttuale = selectEl.value;
+      historyListEl.innerHTML = '';
+
+      // Filtra i log per l'esercizio selezionato, ordina dal più recente e prendi gli ultimi 5
+      const logFiltrati = logAllenamenti
+        .filter(log => log.esercizio === esercizioAttuale)
+        .reverse()
+        .slice(0, 5);
+
+      if (logFiltrati.length === 0) {
+        historyListEl.innerHTML = '<div class="history-item"><span class="date">Nessuna serie salvata.</span></div>';
+        return;
+      }
+
+      logFiltrati.forEach(log => {
+        const data = new Date(log.timestamp);
+        const dataFormattata = `${data.getDate()}/${data.getMonth()+1} - ${data.getHours()}:${String(data.getMinutes()).padStart(2, '0')}`;
+        
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `<span class="date">${dataFormattata}</span> <span class="stats">${log.peso}kg x ${log.ripetizioni}</span>`;
+        historyListEl.appendChild(item);
       });
     }
 
-    // 2. GESTIONE INSTALLAZIONE PWA (Il prompt)
+    // Aggiorna lo storico quando cambi esercizio dal menu
+    selectEl.addEventListener('change', aggiornaStorico);
+
+    // --- 4. SALVATAGGIO DATI ---
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const peso = weightEl.value;
+      const ripetizioni = repsEl.value;
+
+      if (!peso || !ripetizioni) {
+        alert('Inserisci sia il peso che le ripetizioni.');
+        return;
+      }
+
+      // Crea il nuovo record
+      const nuovaSerie = {
+        esercizio: selectEl.value,
+        peso: parseFloat(peso),
+        ripetizioni: parseInt(ripetizioni),
+        timestamp: Date.now()
+      };
+
+      // Salva nell'array e poi nella memoria del telefono
+      logAllenamenti.push(nuovaSerie);
+      localStorage.setItem('workout_db', JSON.stringify(logAllenamenti));
+
+      // Resetta i campi opzionalmente e aggiorna l'UI
+      repsEl.value = ''; 
+      aggiornaStorico();
+    });
+
+    // Mostra subito lo storico al caricamento
+    aggiornaStorico();
+
+
+    // --- 5. LOGICA SERVICE WORKER & PWA (Rimasta Invariata) ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try { await navigator.serviceWorker.register('./sw.js'); } 
+        catch (err) { console.error('Errore SW:', err); }
+      });
+    }
+
     let deferredPrompt;
     const installCard = document.getElementById('installCard');
     const installBtn = document.getElementById('installBtn');
 
-    // Questo evento scatta SOLO se tutti i requisiti (HTTPS, Manifest, SW, Icone) sono soddisfatti
     window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault(); // Blocca il prompt automatico
-      deferredPrompt = e; // Salva l'evento
-      installCard.style.display = 'block'; // Mostra il nostro banner UI
+      e.preventDefault();
+      deferredPrompt = e;
+      installCard.style.display = 'block';
     });
 
     installBtn.addEventListener('click', async () => {
       if (deferredPrompt) {
-        deferredPrompt.prompt(); // Mostra il prompt nativo del sistema operativo
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`Risultato: ${outcome}`);
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
         deferredPrompt = null;
-        installCard.style.display = 'none'; // Nascondi il banner
+        installCard.style.display = 'none';
       }
-    });
-
-    // Ascolta se l'app viene installata con successo
-    window.addEventListener('appinstalled', () => {
-      installCard.style.display = 'none';
-      console.log('PWA installata correttamente!');
     });
   </script>
 </body>
