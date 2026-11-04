@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workout Tracker</title>
+  
+  <!-- Richiama il Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Colore della barra di stato su mobile -->
+  <meta name="theme-color" content="#2563eb">
+</head>
+<body>
+  <h1>Logbook Palestra PWA</h1>
+  
+  <!-- Registrazione del Service Worker -->
+  <script>
+    // Controlla se il browser supporta i Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('Service Worker registrato con successo. Scope:', registration.scope);
+          })
+          .catch(error => {
+            console.error('Registrazione Service Worker fallita:', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
