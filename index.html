@@ -3,247 +3,277 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Workout Tracker</title>
-  
+  <title>Calisthenics Pro PWA</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Workout">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <meta name="theme-color" content="#18181b">
-  
+  <meta name="theme-color" content="#121212">
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, sans-serif;
-      background-color: #18181b;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-    }
-    header { width: 100%; max-width: 400px; text-align: center; margin-bottom: 20px; }
-    h1 { margin: 0; font-size: 24px; color: #3b82f6; }
+    /* Stili Base e Reset */
+    :root { --bg: #121212; --card: #1e1e1e; --primary: #bb86fc; --text: #ffffff; --text-muted: #a1a1aa; --danger: #cf6679; --success: #03dac6; }
+    body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); padding-bottom: 70px; }
+    * { box-sizing: border-box; }
     
-    .card {
-      background: #27272a;
-      padding: 20px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 400px;
-      box-sizing: border-box;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    }
+    /* Layout */
+    .header { padding: 20px; text-align: center; background: var(--card); font-size: 20px; font-weight: bold; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 10; }
+    .container { padding: 20px; display: none; } /* Le view sono nascoste di default */
+    .container.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Componenti UI */
+    .card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    h2, h3 { margin-top: 0; color: var(--primary); }
+    input, select { width: 100%; padding: 12px; margin: 8px 0 16px; border-radius: 8px; border: 1px solid #444; background: var(--bg); color: var(--text); font-size: 16px; }
     
-    /* Stili per form e input */
-    label { font-size: 14px; color: #a1a1aa; font-weight: 500; }
-    select, input {
-      width: 100%;
-      padding: 12px;
-      margin-top: 6px;
-      margin-bottom: 16px;
-      border-radius: 8px;
-      border: 1px solid #3f3f46;
-      background: #18181b;
-      color: white;
-      font-size: 16px;
-      box-sizing: border-box;
-      outline: none;
-    }
-    select:focus, input:focus { border-color: #3b82f6; }
+    .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; color: #121212; }
+    .btn-primary { background: var(--primary); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-success { background: var(--success); }
     
-    .flex-row { display: flex; gap: 12px; }
-    .flex-col { flex: 1; }
+    /* Timer Display */
+    .timer-display { font-size: 48px; font-variant-numeric: tabular-nums; text-align: center; margin: 20px 0; font-weight: bold; }
     
-    .btn {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 16px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      width: 100%;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn:active { background: #2563eb; }
+    /* Bottom Navigation */
+    .bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--card); border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 10px 0; padding-bottom: env(safe-area-inset-bottom); }
+    .nav-item { color: var(--text-muted); text-align: center; font-size: 12px; cursor: pointer; flex: 1; padding: 10px; }
+    .nav-item.active { color: var(--primary); font-weight: bold; }
+    .nav-icon { font-size: 24px; display: block; margin-bottom: 4px; }
     
-    /* Lista Storico */
-    .history { margin-top: 24px; border-top: 1px solid #3f3f46; padding-top: 16px; }
-    .history h4 { margin: 0 0 12px 0; font-size: 16px; }
-    .history-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid #3f3f46;
-      font-size: 14px;
-    }
-    .history-item:last-child { border-bottom: none; }
-    .date { color: #a1a1aa; }
-    .stats { font-weight: bold; color: #34d399; }
-    
-    #installCard { background: #064e3b; border: 1px solid #10b981; display: none; margin-bottom: 20px; }
-    #installBtn { background: #10b981; margin-top: 10px; }
+    /* List item */
+    .list-item { padding: 12px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>Workout Pro</h1>
-  </header>
+  <div class="header">CaliTracker Pro</div>
 
-  <!-- Banner di installazione PWA -->
-  <div class="card" id="installCard">
-    <h3 style="margin-top:0; color: #34d399;">App Pronta!</h3>
-    <p style="margin:0; font-size: 14px; color: #d1fae5;">Installa l'app per salvare i dati sul telefono.</p>
-    <button class="btn" id="installBtn">Installa App</button>
+  <!-- VIEW 1: ALLENAMENTO (Timer e Log) -->
+  <div id="view-workout" class="container active">
+    <div class="card">
+      <h3>Esercizio Attuale</h3>
+      <select id="workout-exercise-select"></select>
+      
+      <div id="timer-display" class="timer-display">00:00</div>
+      
+      <button id="action-btn" class="btn btn-primary">▶️ Inizia Serie</button>
+      <p style="text-align:center; color: var(--text-muted); font-size: 14px; margin-top: 15px;" id="timer-status">Pronto per iniziare</p>
+    </div>
   </div>
 
-  <!-- Interfaccia Registrazione -->
-  <div class="card">
-    <label for="exerciseSelect">Seleziona Esercizio</label>
-    <select id="exerciseSelect"></select>
-
-    <div class="flex-row">
-      <div class="flex-col">
-        <label for="weight">Peso (kg)</label>
-        <input type="number" id="weight" step="0.5" placeholder="es. 80">
-      </div>
-      <div class="flex-col">
-        <label for="reps">Ripetizioni</label>
-        <input type="number" id="reps" placeholder="es. 8">
-      </div>
+  <!-- VIEW 2: LIBRERIA (Gestione Esercizi e Categorie) -->
+  <div id="view-library" class="container">
+    <div class="card">
+      <h3>Aggiungi Esercizio</h3>
+      <label>Nome Esercizio</label>
+      <input type="text" id="new-ex-name" placeholder="es. Muscle Up">
+      
+      <label>Distretto / Categoria</label>
+      <select id="new-ex-cat"></select>
+      
+      <button id="add-ex-btn" class="btn btn-success">➕ Aggiungi alla Libreria</button>
     </div>
 
-    <button class="btn" id="saveBtn">Salva Serie</button>
+    <div class="card">
+      <h3>I Tuoi Esercizi</h3>
+      <div id="exercise-list"></div>
+    </div>
+  </div>
 
-    <div class="history">
-      <h4>Ultime Serie</h4>
-      <div id="historyList"></div>
+  <!-- VIEW 3: STORICO -->
+  <div id="view-history" class="container">
+    <div class="card">
+      <h3>Ultime Serie</h3>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('workout')">
+      <span class="nav-icon">⏱️</span>Workout
+    </div>
+    <div class="nav-item" onclick="switchTab('library')">
+      <span class="nav-icon">📚</span>Libreria
+    </div>
+    <div class="nav-item" onclick="switchTab('history')">
+      <span class="nav-icon">📈</span>Storico
     </div>
   </div>
 
   <script>
-    // --- 1. LIBRERIA ESERCIZI ---
-    // Puoi aggiungere, rimuovere o modificare questa lista in qualsiasi momento
-    const libreriaEsercizi = [
-      "Panca Piana",
-      "Panca Inclinata Manubri",
-      "Squat Bilanciere",
-      "Stacco da Terra",
-      "Trazioni alla Sbarra",
-      "Rematore Bilanciere",
-      "Lento Avanti",
-      "Leg Press",
-      "Curl Bicipiti"
-    ];
+    // --- 1. GESTIONE DATABASE E STATO ---
+    const defaultDB = {
+      categories: ["Spinta", "Tirata", "Core", "Gambe", "Full Body"],
+      exercises: [
+        { id: 1, name: "Pull Ups (Trazioni)", category: "Tirata" },
+        { id: 2, name: "Push Ups (Piegamenti)", category: "Spinta" },
+        { id: 3, name: "Pistol Squat", category: "Gambe" },
+        { id: 4, name: "L-Sit", category: "Core" }
+      ],
+      logs: [] // { date, exercise, reps, execTimeSec, restTimeSec }
+    };
 
-    // --- 2. INIZIALIZZAZIONE UI ---
-    const selectEl = document.getElementById('exerciseSelect');
-    const weightEl = document.getElementById('weight');
-    const repsEl = document.getElementById('reps');
-    const historyListEl = document.getElementById('historyList');
+    // Inizializza il DB locale
+    let db = JSON.parse(localStorage.getItem('cali_db')) || defaultDB;
+    const saveDB = () => localStorage.setItem('cali_db', JSON.stringify(db));
 
-    // Popola il menu a tendina
-    libreriaEsercizi.forEach(esercizio => {
-      const option = document.createElement('option');
-      option.value = esercizio;
-      option.textContent = esercizio;
-      selectEl.appendChild(option);
+    // --- 2. LOGICA DI NAVIGAZIONE A TAB ---
+    function switchTab(tabName) {
+      document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      
+      document.getElementById(`view-${tabName}`).classList.add('active');
+      event.currentTarget.classList.add('active');
+
+      if(tabName === 'history') renderHistory();
+    }
+
+    // --- 3. POPOLAMENTO UI (Libreria ed Esercizi) ---
+    function renderLibrary() {
+      const catSelect = document.getElementById('new-ex-cat');
+      const workSelect = document.getElementById('workout-exercise-select');
+      const exList = document.getElementById('exercise-list');
+
+      catSelect.innerHTML = db.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      workSelect.innerHTML = db.exercises.map(e => `<option value="${e.name}">[${e.category}] ${e.name}</option>`).join('');
+      
+      exList.innerHTML = db.exercises.map(e => `
+        <div class="list-item">
+          <span><b>${e.name}</b> <small style="color:var(--text-muted)">(${e.category})</small></span>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('add-ex-btn').addEventListener('click', () => {
+      const name = document.getElementById('new-ex-name').value;
+      const cat = document.getElementById('new-ex-cat').value;
+      if (!name) return alert("Inserisci un nome!");
+      
+      db.exercises.push({ id: Date.now(), name, category: cat });
+      saveDB();
+      document.getElementById('new-ex-name').value = '';
+      renderLibrary();
     });
 
-    // --- 3. DATABASE LOCALE (localStorage) ---
-    // Recupera i dati salvati o crea un array vuoto
-    let logAllenamenti = JSON.parse(localStorage.getItem('workout_db')) || [];
+    // --- 4. LOGICA DEL TIMER INTELLIGENTE ---
+    let timerState = 'idle'; // 'idle' | 'executing' | 'resting'
+    let timerInterval;
+    let startTime;
+    let execTimeSec = 0;
+    const defaultRestSec = 90; // 1 minuto e 30 sec di base per il recupero
 
-    function aggiornaStorico() {
-      const esercizioAttuale = selectEl.value;
-      historyListEl.innerHTML = '';
+    const timerDisplay = document.getElementById('timer-display');
+    const actionBtn = document.getElementById('action-btn');
+    const timerStatus = document.getElementById('timer-status');
 
-      // Filtra i log per l'esercizio selezionato, ordina dal più recente e prendi gli ultimi 5
-      const logFiltrati = logAllenamenti
-        .filter(log => log.esercizio === esercizioAttuale)
-        .reverse()
-        .slice(0, 5);
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const s = (seconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
 
-      if (logFiltrati.length === 0) {
-        historyListEl.innerHTML = '<div class="history-item"><span class="date">Nessuna serie salvata.</span></div>';
-        return;
-      }
+    function updateDisplay(seconds) {
+      timerDisplay.innerText = formatTime(seconds);
+    }
 
-      logFiltrati.forEach(log => {
-        const data = new Date(log.timestamp);
-        const dataFormattata = `${data.getDate()}/${data.getMonth()+1} - ${data.getHours()}:${String(data.getMinutes()).padStart(2, '0')}`;
+    actionBtn.addEventListener('click', () => {
+      if (timerState === 'idle' || timerState === 'resting') {
+        // INIZIA L'ESECUZIONE DELL'ESERCIZIO
+        clearInterval(timerInterval);
+        timerState = 'executing';
+        startTime = Date.now();
+        actionBtn.innerText = "⏹️ Fine Esecuzione";
+        actionBtn.className = "btn btn-danger";
+        timerStatus.innerText = "Tempo Sotto Tensione (Esecuzione)";
         
-        const item = document.createElement('div');
-        item.className = 'history-item';
-        item.innerHTML = `<span class="date">${dataFormattata}</span> <span class="stats">${log.peso}kg x ${log.ripetizioni}</span>`;
-        historyListEl.appendChild(item);
-      });
-    }
+        timerInterval = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          updateDisplay(elapsed);
+        }, 200);
 
-    // Aggiorna lo storico quando cambi esercizio dal menu
-    selectEl.addEventListener('change', aggiornaStorico);
+      } else if (timerState === 'executing') {
+        // FINE ESECUZIONE -> CHIEDI LE REPS -> INIZIA RECUPERO
+        clearInterval(timerInterval);
+        execTimeSec = Math.floor((Date.now() - startTime) / 1000);
+        
+        // Simula un popup nativo per inserire le ripetizioni
+        const reps = prompt("Serie finita! Quante ripetizioni hai fatto?", "10");
+        
+        if (reps !== null) {
+          // Salva nel DB
+          db.logs.push({
+            date: Date.now(),
+            exercise: document.getElementById('workout-exercise-select').value,
+            reps: parseInt(reps) || 0,
+            execTimeSec: execTimeSec
+          });
+          saveDB();
+        }
 
-    // --- 4. SALVATAGGIO DATI ---
-    document.getElementById('saveBtn').addEventListener('click', () => {
-      const peso = weightEl.value;
-      const ripetizioni = repsEl.value;
+        // INIZIA IL RECUPERO AUTOMATICO
+        timerState = 'resting';
+        actionBtn.innerText = "⏭️ Salta Recupero";
+        actionBtn.className = "btn btn-success";
+        timerStatus.innerText = "Tempo di Recupero Rimanente";
+        let restRemaining = defaultRestSec;
+        updateDisplay(restRemaining);
+        
+        const restStartTime = Date.now();
 
-      if (!peso || !ripetizioni) {
-        alert('Inserisci sia il peso che le ripetizioni.');
+        timerInterval = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - restStartTime) / 1000);
+          restRemaining = defaultRestSec - elapsed;
+          
+          if (restRemaining <= 0) {
+            // RECUPERO FINITO!
+            clearInterval(timerInterval);
+            timerState = 'idle';
+            updateDisplay(0);
+            actionBtn.innerText = "▶️ Inizia Nuova Serie";
+            actionBtn.className = "btn btn-primary";
+            timerStatus.innerText = "Recupero Terminato!";
+            // Feedback fisico se il dispositivo lo supporta
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300]); 
+          } else {
+            updateDisplay(restRemaining);
+          }
+        }, 200);
+      }
+    });
+
+    // --- 5. RENDER STORICO ---
+    function renderHistory() {
+      const list = document.getElementById('history-list');
+      const recentLogs = [...db.logs].reverse().slice(0, 15); // Mostra gli ultimi 15
+      
+      if(recentLogs.length === 0) {
+        list.innerHTML = "<p style='color:var(--text-muted)'>Nessun allenamento registrato.</p>";
         return;
       }
 
-      // Crea il nuovo record
-      const nuovaSerie = {
-        esercizio: selectEl.value,
-        peso: parseFloat(peso),
-        ripetizioni: parseInt(ripetizioni),
-        timestamp: Date.now()
-      };
-
-      // Salva nell'array e poi nella memoria del telefono
-      logAllenamenti.push(nuovaSerie);
-      localStorage.setItem('workout_db', JSON.stringify(logAllenamenti));
-
-      // Resetta i campi opzionalmente e aggiorna l'UI
-      repsEl.value = ''; 
-      aggiornaStorico();
-    });
-
-    // Mostra subito lo storico al caricamento
-    aggiornaStorico();
-
-
-    // --- 5. LOGICA SERVICE WORKER & PWA (Rimasta Invariata) ---
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try { await navigator.serviceWorker.register('./sw.js'); } 
-        catch (err) { console.error('Errore SW:', err); }
-      });
+      list.innerHTML = recentLogs.map(log => {
+        const d = new Date(log.date);
+        const dateStr = `${d.getDate()}/${d.getMonth()+1} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+        return `
+          <div class="list-item">
+            <div>
+              <div style="font-weight:bold; color:var(--success)">${log.reps} Reps</div>
+              <div style="font-size: 12px; color:var(--text-muted)">${dateStr}</div>
+            </div>
+            <div style="text-align:right">
+              <div>${log.exercise}</div>
+              <div style="font-size: 12px; color:var(--text-muted)">Esecuzione: ${log.execTimeSec}s</div>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
-    let deferredPrompt;
-    const installCard = document.getElementById('installCard');
-    const installBtn = document.getElementById('installBtn');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installCard.style.display = 'block';
-    });
-
-    installBtn.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        installCard.style.display = 'none';
-      }
-    });
+    // Inizializza l'app all'avvio
+    renderLibrary();
+    
+    // Registrazione Service Worker per il funzionamento Offline
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+    }
   </script>
 </body>
 </html>
