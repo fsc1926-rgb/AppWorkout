@@ -2,32 +2,130 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Regola fondamentale per il mobile: impedisce lo zoom accidentale -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Workout Tracker</title>
   
-  <!-- Richiama il Manifest -->
-  <link rel="manifest" href="/manifest.json">
+  <!-- Collegamento al Manifest -->
+  <link rel="manifest" href="manifest.json">
   
-  <!-- Colore della barra di stato su mobile -->
-  <meta name="theme-color" content="#2563eb">
+  <!-- Supporto specifico per iOS (iPhone/iPad) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Workout">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  
+  <meta name="theme-color" content="#18181b">
+  
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #18181b;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    header { width: 100%; max-width: 400px; text-align: center; margin-bottom: 20px; }
+    h1 { margin: 0; font-size: 24px; color: #3b82f6; }
+    
+    .card {
+      background: #27272a;
+      padding: 20px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      width: 100%;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: background 0.2s;
+    }
+    .btn:active { background: #2563eb; }
+    
+    /* Il tasto di installazione è nascosto finché la PWA non è validata dal browser */
+    #installCard {
+      background: #064e3b;
+      border: 1px solid #10b981;
+      display: none; 
+      margin-bottom: 20px;
+    }
+    #installBtn { background: #10b981; margin-top: 10px; }
+  </style>
 </head>
 <body>
-  <h1>Logbook Palestra PWA</h1>
-  
-  <!-- Registrazione del Service Worker -->
+
+  <header>
+    <h1>Workout Pro</h1>
+  </header>
+
+  <!-- Banner di installazione -->
+  <div class="card" id="installCard">
+    <h3 style="margin-top:0; color: #34d399;">App Pronta!</h3>
+    <p style="margin:0; font-size: 14px; color: #d1fae5;">Installa questa app per usarla offline in palestra.</p>
+    <button class="btn" id="installBtn">Installa App</button>
+  </div>
+
+  <!-- Contenuto dell'App -->
+  <div class="card">
+    <h3 style="margin-top: 0;">Panca Piana</h3>
+    <p style="color: #a1a1aa;">Ultima serie: 80kg x 8</p>
+    <button class="btn" onclick="alert('Salvato in IndexedDB (Simulato)')">Log: 82.5kg x 8</button>
+  </div>
+
   <script>
-    // Controlla se il browser supporta i Service Worker
+    // 1. REGISTRAZIONE SERVICE WORKER
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('Service Worker registrato con successo. Scope:', registration.scope);
-          })
-          .catch(error => {
-            console.error('Registrazione Service Worker fallita:', error);
-          });
+      window.addEventListener('load', async () => {
+        try {
+          const reg = await navigator.serviceWorker.register('./sw.js');
+          console.log('SW Registrato con successo!', reg.scope);
+        } catch (err) {
+          console.error('Errore registrazione SW:', err);
+        }
       });
     }
+
+    // 2. GESTIONE INSTALLAZIONE PWA (Il prompt)
+    let deferredPrompt;
+    const installCard = document.getElementById('installCard');
+    const installBtn = document.getElementById('installBtn');
+
+    // Questo evento scatta SOLO se tutti i requisiti (HTTPS, Manifest, SW, Icone) sono soddisfatti
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault(); // Blocca il prompt automatico
+      deferredPrompt = e; // Salva l'evento
+      installCard.style.display = 'block'; // Mostra il nostro banner UI
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt(); // Mostra il prompt nativo del sistema operativo
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`Risultato: ${outcome}`);
+        deferredPrompt = null;
+        installCard.style.display = 'none'; // Nascondi il banner
+      }
+    });
+
+    // Ascolta se l'app viene installata con successo
+    window.addEventListener('appinstalled', () => {
+      installCard.style.display = 'none';
+      console.log('PWA installata correttamente!');
+    });
   </script>
 </body>
 </html>
