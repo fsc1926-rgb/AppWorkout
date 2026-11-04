@@ -3,276 +3,342 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Calisthenics Pro PWA</title>
+  <title>Workout Pro Definitiva</title>
   <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#121212">
   <style>
-    /* Stili Base e Reset */
-    :root { --bg: #121212; --card: #1e1e1e; --primary: #bb86fc; --text: #ffffff; --text-muted: #a1a1aa; --danger: #cf6679; --success: #03dac6; }
-    body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); padding-bottom: 70px; }
+    /* RESET E VARIABILI */
+    :root { --bg: #121212; --card: #1e1e1e; --primary: #bb86fc; --text: #ffffff; --muted: #a1a1aa; --danger: #cf6679; --success: #03dac6; }
+    body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding-bottom: 70px; }
     * { box-sizing: border-box; }
     
-    /* Layout */
-    .header { padding: 20px; text-align: center; background: var(--card); font-size: 20px; font-weight: bold; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 10; }
-    .container { padding: 20px; display: none; } /* Le view sono nascoste di default */
-    .container.active { display: block; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .header { padding: 15px; text-align: center; background: var(--card); font-size: 20px; font-weight: bold; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 10; }
+    .container { padding: 15px; display: none; }
+    .container.active { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* Componenti UI */
-    .card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    /* CARD E FORM */
+    .card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
     h2, h3 { margin-top: 0; color: var(--primary); }
     input, select { width: 100%; padding: 12px; margin: 8px 0 16px; border-radius: 8px; border: 1px solid #444; background: var(--bg); color: var(--text); font-size: 16px; }
     
-    .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; color: #121212; }
+    .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; color: #121212; margin-bottom: 10px; }
     .btn-primary { background: var(--primary); }
     .btn-danger { background: var(--danger); color: white; }
     .btn-success { background: var(--success); }
+    .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+
+    /* DISPLAY TIMER */
+    .timer-display { font-size: 56px; font-variant-numeric: tabular-nums; text-align: center; margin: 20px 0; font-weight: bold; color: var(--success); }
     
-    /* Timer Display */
-    .timer-display { font-size: 48px; font-variant-numeric: tabular-nums; text-align: center; margin: 20px 0; font-weight: bold; }
+    /* STORICO E LISTE */
+    .list-item { padding: 12px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+    .list-item:last-child { border: none; }
     
-    /* Bottom Navigation */
+    /* NAVIGAZIONE INFERIORE */
     .bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--card); border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 10px 0; padding-bottom: env(safe-area-inset-bottom); }
-    .nav-item { color: var(--text-muted); text-align: center; font-size: 12px; cursor: pointer; flex: 1; padding: 10px; }
+    .nav-item { color: var(--muted); text-align: center; font-size: 12px; cursor: pointer; flex: 1; }
     .nav-item.active { color: var(--primary); font-weight: bold; }
-    .nav-icon { font-size: 24px; display: block; margin-bottom: 4px; }
-    
-    /* List item */
-    .list-item { padding: 12px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+    .nav-icon { font-size: 22px; display: block; margin-bottom: 4px; }
   </style>
 </head>
 <body>
 
-  <div class="header">CaliTracker Pro</div>
+  <div class="header">CaliTracker Definitiva</div>
 
-  <!-- VIEW 1: ALLENAMENTO (Timer e Log) -->
+  <!-- TAB 1: WORKOUT (Schede e Timer) -->
   <div id="view-workout" class="container active">
     <div class="card">
-      <h3>Esercizio Attuale</h3>
-      <select id="workout-exercise-select"></select>
+      <h3>Cosa alleni oggi?</h3>
+      <select id="routine-select">
+        <option value="free">Allenamento Libero (Scegli tu)</option>
+        <!-- Le schede verranno iniettate qui -->
+      </select>
       
+      <select id="exercise-select"></select>
+
       <div id="timer-display" class="timer-display">00:00</div>
+      <p style="text-align:center; color: var(--muted); margin-top:-10px; margin-bottom: 20px;" id="timer-status">Pronto</p>
       
-      <button id="action-btn" class="btn btn-primary">▶️ Inizia Serie</button>
-      <p style="text-align:center; color: var(--text-muted); font-size: 14px; margin-top: 15px;" id="timer-status">Pronto per iniziare</p>
+      <button id="action-btn" class="btn btn-primary">▶️ Inizia Esecuzione</button>
     </div>
   </div>
 
-  <!-- VIEW 2: LIBRERIA (Gestione Esercizi e Categorie) -->
-  <div id="view-library" class="container">
+  <!-- TAB 2: COSTRUTTORE SCHEDE E LIBRERIA -->
+  <div id="view-builder" class="container">
     <div class="card">
-      <h3>Aggiungi Esercizio</h3>
-      <label>Nome Esercizio</label>
-      <input type="text" id="new-ex-name" placeholder="es. Muscle Up">
-      
-      <label>Distretto / Categoria</label>
-      <select id="new-ex-cat"></select>
-      
-      <button id="add-ex-btn" class="btn btn-success">➕ Aggiungi alla Libreria</button>
+      <h3>Crea Nuova Scheda</h3>
+      <input type="text" id="new-routine-name" placeholder="Es. Giorno A: Spinta">
+      <p style="color: var(--muted); font-size: 12px;">Seleziona gli esercizi da includere:</p>
+      <div id="routine-exercise-checkboxes" style="max-height: 150px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #444; padding: 10px; border-radius: 8px;">
+        <!-- Checkbox iniettate -->
+      </div>
+      <button id="add-routine-btn" class="btn btn-success">💾 Salva Scheda</button>
     </div>
 
     <div class="card">
-      <h3>I Tuoi Esercizi</h3>
-      <div id="exercise-list"></div>
+      <h3>Aggiungi Esercizio alla Libreria</h3>
+      <input type="text" id="new-ex-name" placeholder="Nome Esercizio (es. Front Lever)">
+      <button id="add-ex-btn" class="btn btn-outline">➕ Aggiungi</button>
     </div>
   </div>
 
-  <!-- VIEW 3: STORICO -->
+  <!-- TAB 3: STORICO -->
   <div id="view-history" class="container">
     <div class="card">
-      <h3>Ultime Serie</h3>
+      <h3>I Tuoi Progressi</h3>
       <div id="history-list"></div>
     </div>
   </div>
 
-  <!-- BOTTOM NAVIGATION -->
-  <div class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('workout')">
-      <span class="nav-icon">⏱️</span>Workout
-    </div>
-    <div class="nav-item" onclick="switchTab('library')">
-      <span class="nav-icon">📚</span>Libreria
-    </div>
-    <div class="nav-item" onclick="switchTab('history')">
-      <span class="nav-icon">📈</span>Storico
+  <!-- TAB 4: IMPOSTAZIONI E BACKUP -->
+  <div id="view-settings" class="container">
+    <div class="card">
+      <h3>Salvataggio Dati</h3>
+      <p style="color: var(--muted); font-size: 14px;">Il browser potrebbe cancellare i dati se svuoti la cache. Esporta periodicamente il tuo backup.</p>
+      
+      <button onclick="exportData()" class="btn btn-success">⬇️ Esporta Backup (JSON)</button>
+      
+      <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px;">
+        <label for="import-file" style="font-size:14px; color:var(--primary);">Ripristina da Backup</label>
+        <input type="file" id="import-file" accept=".json" style="margin-top:10px;">
+      </div>
     </div>
   </div>
 
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('workout')"><span class="nav-icon">⏱️</span>Workout</div>
+    <div class="nav-item" onclick="switchTab('builder')"><span class="nav-icon">📝</span>Schede</div>
+    <div class="nav-item" onclick="switchTab('history')"><span class="nav-icon">📈</span>Storico</div>
+    <div class="nav-item" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>Setup</div>
+  </div>
+
   <script>
-    // --- 1. GESTIONE DATABASE E STATO ---
+    // --- 1. STATO DELL'APP E DATABASE ---
     const defaultDB = {
-      categories: ["Spinta", "Tirata", "Core", "Gambe", "Full Body"],
-      exercises: [
-        { id: 1, name: "Pull Ups (Trazioni)", category: "Tirata" },
-        { id: 2, name: "Push Ups (Piegamenti)", category: "Spinta" },
-        { id: 3, name: "Pistol Squat", category: "Gambe" },
-        { id: 4, name: "L-Sit", category: "Core" }
+      exercises: ["Pull Ups", "Push Ups", "Dip", "Pistol Squat", "Planche Lean", "L-Sit"],
+      routines: [
+        { id: 1, name: "Base Calisthenics", exercises: ["Pull Ups", "Push Ups", "L-Sit"] }
       ],
-      logs: [] // { date, exercise, reps, execTimeSec, restTimeSec }
+      logs: [] // { date, exercise, reps, rpe, notes, execTime }
     };
 
-    // Inizializza il DB locale
-    let db = JSON.parse(localStorage.getItem('cali_db')) || defaultDB;
-    const saveDB = () => localStorage.setItem('cali_db', JSON.stringify(db));
+    let db = JSON.parse(localStorage.getItem('cali_pro_db')) || defaultDB;
+    const saveDB = () => localStorage.setItem('cali_pro_db', JSON.stringify(db));
 
-    // --- 2. LOGICA DI NAVIGAZIONE A TAB ---
-    function switchTab(tabName) {
+    let wakeLock = null;
+
+    // --- 2. NAVIGAZIONE ---
+    function switchTab(tab) {
       document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      
-      document.getElementById(`view-${tabName}`).classList.add('active');
+      document.getElementById(`view-${tab}`).classList.add('active');
       event.currentTarget.classList.add('active');
-
-      if(tabName === 'history') renderHistory();
+      
+      if(tab === 'workout') renderWorkoutTab();
+      if(tab === 'builder') renderBuilderTab();
+      if(tab === 'history') renderHistory();
     }
 
-    // --- 3. POPOLAMENTO UI (Libreria ed Esercizi) ---
-    function renderLibrary() {
-      const catSelect = document.getElementById('new-ex-cat');
-      const workSelect = document.getElementById('workout-exercise-select');
-      const exList = document.getElementById('exercise-list');
+    // --- 3. WAKE LOCK (Schermo Acceso) ---
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        try { wakeLock = await navigator.wakeLock.request('screen'); } 
+        catch (err) { console.log('Wake Lock disabilitato', err); }
+      }
+    }
+    function releaseWakeLock() { if (wakeLock) wakeLock.release(); wakeLock = null; }
 
-      catSelect.innerHTML = db.categories.map(c => `<option value="${c}">${c}</option>`).join('');
-      workSelect.innerHTML = db.exercises.map(e => `<option value="${e.name}">[${e.category}] ${e.name}</option>`).join('');
+    // --- 4. GESTIONE INTERFACCIA ---
+    function renderWorkoutTab() {
+      const rSelect = document.getElementById('routine-select');
+      const eSelect = document.getElementById('exercise-select');
       
-      exList.innerHTML = db.exercises.map(e => `
-        <div class="list-item">
-          <span><b>${e.name}</b> <small style="color:var(--text-muted)">(${e.category})</small></span>
-        </div>
+      // Carica schede
+      rSelect.innerHTML = `<option value="free">🏋️ Allenamento Libero</option>` + 
+        db.routines.map((r, i) => `<option value="${i}">📁 Scheda: ${r.name}</option>`).join('');
+      
+      // Carica esercizi
+      const updateExercises = () => {
+        if (rSelect.value === 'free') {
+          eSelect.innerHTML = db.exercises.map(e => `<option value="${e}">${e}</option>`).join('');
+        } else {
+          const routine = db.routines[rSelect.value];
+          eSelect.innerHTML = routine.exercises.map(e => `<option value="${e}">${e}</option>`).join('');
+        }
+      };
+      
+      rSelect.onchange = updateExercises;
+      updateExercises();
+    }
+
+    function renderBuilderTab() {
+      const checks = document.getElementById('routine-exercise-checkboxes');
+      checks.innerHTML = db.exercises.map(e => `
+        <label style="display:block; margin-bottom:8px;">
+          <input type="checkbox" value="${e}" class="ex-check" style="width:auto; margin:0 10px 0 0;"> ${e}
+        </label>
       `).join('');
     }
 
-    document.getElementById('add-ex-btn').addEventListener('click', () => {
+    // Aggiungi Esercizio alla Libreria
+    document.getElementById('add-ex-btn').onclick = () => {
       const name = document.getElementById('new-ex-name').value;
-      const cat = document.getElementById('new-ex-cat').value;
-      if (!name) return alert("Inserisci un nome!");
-      
-      db.exercises.push({ id: Date.now(), name, category: cat });
+      if (!name) return;
+      db.exercises.push(name);
       saveDB();
       document.getElementById('new-ex-name').value = '';
-      renderLibrary();
-    });
+      renderBuilderTab();
+      alert('Esercizio aggiunto!');
+    };
 
-    // --- 4. LOGICA DEL TIMER INTELLIGENTE ---
-    let timerState = 'idle'; // 'idle' | 'executing' | 'resting'
-    let timerInterval;
-    let startTime;
-    let execTimeSec = 0;
-    const defaultRestSec = 90; // 1 minuto e 30 sec di base per il recupero
+    // Salva Nuova Scheda
+    document.getElementById('add-routine-btn').onclick = () => {
+      const name = document.getElementById('new-routine-name').value;
+      const selected = Array.from(document.querySelectorAll('.ex-check:checked')).map(cb => cb.value);
+      if (!name || selected.length === 0) return alert("Inserisci nome e seleziona almeno 1 esercizio.");
+      
+      db.routines.push({ id: Date.now(), name, exercises: selected });
+      saveDB();
+      document.getElementById('new-routine-name').value = '';
+      alert('Scheda salvata!');
+    };
 
+    // --- 5. LOGICA DEL TIMER ---
+    let timerState = 'idle'; // idle, executing, resting
+    let timerInterval, startTime, execTimeSec;
     const timerDisplay = document.getElementById('timer-display');
     const actionBtn = document.getElementById('action-btn');
     const timerStatus = document.getElementById('timer-status');
 
-    function formatTime(seconds) {
-      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-      const s = (seconds % 60).toString().padStart(2, '0');
-      return `${m}:${s}`;
+    function formatTime(s) {
+      return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
     }
 
-    function updateDisplay(seconds) {
-      timerDisplay.innerText = formatTime(seconds);
-    }
+    actionBtn.onclick = () => {
+      const exercise = document.getElementById('exercise-select').value;
+      if (!exercise) return alert("Seleziona un esercizio");
 
-    actionBtn.addEventListener('click', () => {
       if (timerState === 'idle' || timerState === 'resting') {
-        // INIZIA L'ESECUZIONE DELL'ESERCIZIO
+        // INIZIA ESECUZIONE
         clearInterval(timerInterval);
+        requestWakeLock(); // Blocca lo schermo
         timerState = 'executing';
         startTime = Date.now();
-        actionBtn.innerText = "⏹️ Fine Esecuzione";
+        actionBtn.innerText = "⏹️ Fine Serie (Salva)";
         actionBtn.className = "btn btn-danger";
-        timerStatus.innerText = "Tempo Sotto Tensione (Esecuzione)";
+        timerStatus.innerText = "Sotto Tensione (Esecuzione)";
         
-        timerInterval = setInterval(() => {
-          const elapsed = Math.floor((Date.now() - startTime) / 1000);
-          updateDisplay(elapsed);
-        }, 200);
+        timerInterval = setInterval(() => timerDisplay.innerText = formatTime(Math.floor((Date.now() - startTime)/1000)), 200);
 
       } else if (timerState === 'executing') {
-        // FINE ESECUZIONE -> CHIEDI LE REPS -> INIZIA RECUPERO
+        // FINE ESECUZIONE, RACCOLTA DATI
         clearInterval(timerInterval);
-        execTimeSec = Math.floor((Date.now() - startTime) / 1000);
+        execTimeSec = Math.floor((Date.now() - startTime)/1000);
         
-        // Simula un popup nativo per inserire le ripetizioni
-        const reps = prompt("Serie finita! Quante ripetizioni hai fatto?", "10");
-        
-        if (reps !== null) {
-          // Salva nel DB
+        // Raccogliamo i log con prompt consecutivi (in un'app vera si usano modali personalizzate)
+        const reps = prompt(`Serie finita! Quante ripetizioni/secondi di ${exercise}?`, "10");
+        if (reps) {
+          const rpe = prompt("RPE (Difficoltà da 1 a 10)?", "8");
+          const notes = prompt("Note opzionali (es. elastico verde):", "");
+          
           db.logs.push({
-            date: Date.now(),
-            exercise: document.getElementById('workout-exercise-select').value,
-            reps: parseInt(reps) || 0,
-            execTimeSec: execTimeSec
+            date: Date.now(), exercise, reps, rpe, notes, execTime: execTimeSec
           });
           saveDB();
         }
 
-        // INIZIA IL RECUPERO AUTOMATICO
+        // INIZIA RECUPERO AUTOMATICO (Es. 90 sec)
         timerState = 'resting';
         actionBtn.innerText = "⏭️ Salta Recupero";
         actionBtn.className = "btn btn-success";
-        timerStatus.innerText = "Tempo di Recupero Rimanente";
-        let restRemaining = defaultRestSec;
-        updateDisplay(restRemaining);
+        timerStatus.innerText = "Recupero in corso";
         
-        const restStartTime = Date.now();
+        let restSecs = prompt("Secondi di recupero?", "90");
+        restSecs = parseInt(restSecs) || 90;
+        const restStart = Date.now();
 
         timerInterval = setInterval(() => {
-          const elapsed = Math.floor((Date.now() - restStartTime) / 1000);
-          restRemaining = defaultRestSec - elapsed;
+          const elapsed = Math.floor((Date.now() - restStart)/1000);
+          const remaining = restSecs - elapsed;
           
-          if (restRemaining <= 0) {
-            // RECUPERO FINITO!
+          if (remaining <= 0) {
             clearInterval(timerInterval);
             timerState = 'idle';
-            updateDisplay(0);
+            timerDisplay.innerText = "00:00";
             actionBtn.innerText = "▶️ Inizia Nuova Serie";
             actionBtn.className = "btn btn-primary";
-            timerStatus.innerText = "Recupero Terminato!";
-            // Feedback fisico se il dispositivo lo supporta
-            if (navigator.vibrate) navigator.vibrate([300, 100, 300]); 
+            timerStatus.innerText = "Pronto!";
+            releaseWakeLock(); // Sblocca lo schermo
+            if (navigator.vibrate) navigator.vibrate([400, 200, 400]); // Vibrazione forte
           } else {
-            updateDisplay(restRemaining);
+            timerDisplay.innerText = formatTime(remaining);
           }
         }, 200);
       }
-    });
+    };
 
-    // --- 5. RENDER STORICO ---
+    // --- 6. RENDER STORICO ---
     function renderHistory() {
       const list = document.getElementById('history-list');
-      const recentLogs = [...db.logs].reverse().slice(0, 15); // Mostra gli ultimi 15
+      const logs = [...db.logs].reverse().slice(0, 20); // Ultimi 20
       
-      if(recentLogs.length === 0) {
-        list.innerHTML = "<p style='color:var(--text-muted)'>Nessun allenamento registrato.</p>";
-        return;
-      }
-
-      list.innerHTML = recentLogs.map(log => {
+      list.innerHTML = logs.map(log => {
         const d = new Date(log.date);
-        const dateStr = `${d.getDate()}/${d.getMonth()+1} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
         return `
           <div class="list-item">
             <div>
-              <div style="font-weight:bold; color:var(--success)">${log.reps} Reps</div>
-              <div style="font-size: 12px; color:var(--text-muted)">${dateStr}</div>
+              <div style="font-weight:bold; color:var(--success)">${log.reps} reps <small style="color:var(--primary)">[RPE: ${log.rpe || '-'}]</small></div>
+              <div style="font-size: 12px; color:var(--muted)">${d.getDate()}/${d.getMonth()+1} - ${log.notes || ''}</div>
             </div>
             <div style="text-align:right">
               <div>${log.exercise}</div>
-              <div style="font-size: 12px; color:var(--text-muted)">Esecuzione: ${log.execTimeSec}s</div>
+              <div style="font-size: 12px; color:var(--muted)">Exec: ${log.execTime}s</div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // Inizializza l'app all'avvio
-    renderLibrary();
-    
-    // Registrazione Service Worker per il funzionamento Offline
+    // --- 7. BACKUP & RESTORE ---
+    window.exportData = function() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+      const el = document.createElement('a');
+      el.setAttribute("href", dataStr);
+      el.setAttribute("download", `workout_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(el);
+      el.click();
+      el.remove();
+    };
+
+    document.getElementById('import-file').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const importedDB = JSON.parse(event.target.result);
+          if (importedDB.exercises && importedDB.logs) {
+            db = importedDB;
+            saveDB();
+            alert("Backup ripristinato con successo!");
+            window.location.reload();
+          } else { alert("File non valido."); }
+        } catch (err) { alert("Errore lettura file."); }
+      };
+      reader.readAsText(file);
+    });
+
+    // Inizializza
+    renderWorkoutTab();
+    renderBuilderTab();
+
+    // Registrazione SW
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
     }
   </script>
 </body>
